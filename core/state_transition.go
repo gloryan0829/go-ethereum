@@ -417,6 +417,7 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 	// 6. caller has enough balance to cover asset transfer for **topmost** call
 
 	// Check clauses 1-3, buy gas if everything is correct
+	// [2.1.2] executed Precheck function to check if the transaction is valid
 	if err := st.preCheck(); err != nil {
 		return nil, err
 	}
@@ -425,7 +426,7 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 		msg              = st.msg
 		rules            = st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber, st.evm.Context.Random != nil, st.evm.Context.Time)
 		contractCreation = msg.To == nil
-		floorDataGas     uint64
+		floorDataGas     uint64 	// cosmos/evm 존재 안함
 	)
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
@@ -437,6 +438,7 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 		return nil, fmt.Errorf("%w: have %d, want %d", ErrIntrinsicGas, st.gasRemaining, gas)
 	}
 	// Gas limit suffices for the floor data cost (EIP-7623)
+	// cosmos/evm 존재 안함
 	if rules.IsPrague {
 		floorDataGas, err = FloorDataGas(msg.Data)
 		if err != nil {
@@ -451,6 +453,7 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 	}
 	st.gasRemaining -= gas
 
+	// cosmos/evm 존재 안함
 	if rules.IsEIP4762 {
 		st.evm.AccessEvents.AddTxOrigin(msg.From)
 
@@ -476,6 +479,8 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 	// Execute the preparatory steps for state transition which includes:
 	// - prepare accessList(post-berlin)
 	// - reset transient storage(eip 1153)
+
+	// cosmos/evm 존재 안함
 	st.state.Prepare(rules, msg.From, st.evm.Context.Coinbase, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
 
 	var (

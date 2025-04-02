@@ -233,6 +233,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
 		}
 
+		// 이 Verkle Code 와 관련된 Code Chunk 에 대한 Gas 를 처리함 - go ethereum
 		if in.evm.chainRules.IsEIP4762 && !contract.IsDeployment && !contract.IsSystemCall {
 			// if the PC ends up in a new "chunk" of verkleized code, charge the
 			// associated costs.

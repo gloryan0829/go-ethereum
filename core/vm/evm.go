@@ -411,6 +411,9 @@ func (evm *EVM) StaticCall(caller common.Address, addr common.Address, input []b
 
 // create creates a new contract using code as deployment code.
 func (evm *EVM) create(caller common.Address, code []byte, gas uint64, value *uint256.Int, address common.Address, typ OpCode) (ret []byte, createAddress common.Address, leftOverGas uint64, err error) {
+	
+	// go-ethereum 은 가스에 대한 Traking 을 처음 startGas 부터 leftOverGas 까지 해준다.
+	// 이 부분은 go-ethereum만 존재함
 	if evm.Config.Tracer != nil {
 		evm.captureBegin(evm.depth, typ, caller, address, code, gas, value.ToBig())
 		defer func(startGas uint64) {
@@ -425,13 +428,17 @@ func (evm *EVM) create(caller common.Address, code []byte, gas uint64, value *ui
 	if !evm.Context.CanTransfer(evm.StateDB, caller, value) {
 		return nil, common.Address{}, gas, ErrInsufficientBalance
 	}
+
 	nonce := evm.StateDB.GetNonce(caller)
 	if nonce+1 < nonce {
 		return nil, common.Address{}, gas, ErrNonceUintOverflow
 	}
+	// go-ethereum 은 nonce change 에 대한 gas 도 받음
 	evm.StateDB.SetNonce(caller, nonce+1, tracing.NonceChangeContractCreator)
 
 	// Charge the contract creation init gas in verkle mode
+	// verkle 모드라는게 init 되면서 gas 를 소모하는 것으로 보임
+	// go-ethereum 만 존재
 	if evm.chainRules.IsEIP4762 {
 		statelessGas := evm.AccessEvents.ContractCreatePreCheckGas(address)
 		if statelessGas > gas {
@@ -445,6 +452,7 @@ func (evm *EVM) create(caller common.Address, code []byte, gas uint64, value *ui
 
 	// We add this to the access list _before_ taking a snapshot. Even if the
 	// creation fails, the access-list change should not be rolled back.
+	// 이건 명확하게 어떤 것 때문인지 EIP2929 로 넣으면 어덜까
 	if evm.chainRules.IsEIP2929 {
 		evm.StateDB.AddAddressToAccessList(address)
 	}
